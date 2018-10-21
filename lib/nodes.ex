@@ -25,7 +25,7 @@ defmodule Participant do
       GenServer.call(server, {:inspect})
     end
     def set_info(node, hashcode, predecessor, successor, fingers) do   #Set hashcode, predecessor and successor. Used to hardcode initial chord config
-      GenServer.cast(node, {:set_info, {hashcode, predecessor, successor}}) 
+      GenServer.cast(node, {:set_info, {hashcode, predecessor, successor, fingers}}) 
     end
     def set_hashcode(server, hashcode) do
       GenServer.cast(server, {:set_hashcode, {hashcode}})

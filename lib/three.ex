@@ -19,27 +19,27 @@ defmodule Chord do
 
 	def handle_call({:create_node, args}, _, state) do
 		{numNodes} = args
-		hash_map = createNodes(numNodes) |> Enum.sort_by(&(elem(&1, 1)))
+		hash_map = createNodes(numNodes)
+		sorted_hash_list = hash_map |> Enum.sort_by(&(elem(&1, 1))) 
+		IO.puts "hash_map"; IO.inspect hash_map
 		chord_ring = createRing(hash_map)
 		Enum.map(hash_map, fn {pid, hashcode} -> 
 			neighbors = Map.get(chord_ring, Map.get(hash_map, pid))
 			successor = %{:pid => elem(neighbors, 3), :hashcode => elem(neighbors, 2)}
 			predecessor = %{:pid => elem(neighbors, 1), :hashcode => elem(neighbors, 0)}
       
-      
-
-                set_fingers = fn i ->
-                    new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(hashcode, 16), 0) +
-                    Kernel.trunc(:math.pow(2, i)), 16))
-                    Enum.find(hash_map, fn {pid,hashcode} -> hashcode > new_hex end)
-                end
-                fingers = Enum.map(1..10, set_fingers)
-                
+			set_fingers = fn i ->
+					new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(hashcode, 16), 0) +
+					Kernel.trunc(:math.pow(2, i)), 16))
+					Enum.find(sorted_hash_list, fn {pid,hashcode} -> hashcode > new_hex end)
+			end
+			fingers = Enum.map(1..10, set_fingers)
+      # IO.puts "fingers"; IO.inspect fingers          
                 
 			Participant.set_info(pid, hashcode, predecessor, successor, fingers) 
 		end)		
 		newState = put_in state.chord_ring, chord_ring
-		Enum.map(nodes, fn node -> Nodes.stabilize(node, hash_map, chord_ring) end)
+		# Enum.map(nodes, fn node -> Nodes.stabilize(node, hash_map, chord_ring) end)
 		{:reply, :ok, newState}
   	end
 
@@ -51,7 +51,7 @@ defmodule Chord do
 
 
 	def createRing(hash_map) do
-		hash_list = Map.values(hash_map)
+		hash_list = Map.values(hash_map) |> Enum.sort
 		IO.puts "Sorted list"; IO.inspect hash_list
 		successor_map = for a <- hash_list, id = a, data = get_successor(hash_list, a, hash_map), into: %{} do
 			{id, data}
@@ -90,7 +90,7 @@ defmodule Chord do
 	end
 end
 
-defmodule Proj do
+defmodule Three do
 	def start(num_nodes \\ 10, _num_requests \\ 10) do
 		{:ok, pid} = Chord.start_link([])
 		Process.register(pid, :main)
