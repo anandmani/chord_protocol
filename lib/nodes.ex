@@ -9,10 +9,12 @@ defmodule Participant do
       :pending_requests => [request_id1, request_id2],
       :completed_requests => %{
         request_id1: num_hops
-      }
+      },
+      :fingers
     }
     """
     use GenServer
+
     def start_link(opts) do
       {:ok, pid} = GenServer.start_link(__MODULE__, :ok, opts)
       hashcode = :crypto.hash(:sha, Kernel.inspect(pid)) |> Base.encode16
@@ -22,7 +24,7 @@ defmodule Participant do
     def inspect(server) do
       GenServer.call(server, {:inspect})
     end
-    def set_info(node, hashcode, predecessor, successor) do   #Set hashcode, predecessor and successor. Used to hardcode initial chord config
+    def set_info(node, hashcode, predecessor, successor, fingers) do   #Set hashcode, predecessor and successor. Used to hardcode initial chord config
       GenServer.cast(node, {:set_info, {hashcode, predecessor, successor}}) 
     end
     def set_hashcode(server, hashcode) do
@@ -124,8 +126,8 @@ defmodule Participant do
           {hashcode} = methodArgs
           {:noreply, Map.merge(state, %{:hashcode => hashcode})}
         :set_info -> 
-          {hashcode, predecessor, successor} = methodArgs
-          {:noreply, Map.merge(state, %{:hashcode => hashcode, :predecessor => predecessor, :successor => successor})}
+          {hashcode, predecessor, successor, fingers} = methodArgs
+          {:noreply, Map.merge(state, %{:hashcode => hashcode, :predecessor => predecessor, :successor => successor, :fingers => fingers})}
         :create ->
           {:noreply, Map.merge(state, %{:predecessor => nil, :successor => %{:pid => self(), :hashcode => state.hashcode} })}
         :find_successor ->
@@ -143,3 +145,23 @@ defmodule Participant do
     end
   
   end
+  
+  
+# def stabilize(node, chord_ring, hash_map) do
+# 	GenServer.cast(node, {:stabilize, {chord_ring, hash_map}})
+# end
+# # def join(node) do
+# #     GenServer.cast(node, {:joinNodes})
+# # end
+
+#method == :stabilize ->
+# 	IO.inspect(node)
+# 	IO.inspect(state.successor)
+# 	# cond do
+# 	#     elem(Map.get(chord_ring, elem(state.successor, 0)), 0) != Map.get(hash_map, node) ->
+
+# 	# end
+# 	IO.inspect(elem(Map.get(chord_ring, elem(state.successor, 0)), 0))
+# 	newState = state
+# 	{:noreply, newState}
+
