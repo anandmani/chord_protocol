@@ -24,6 +24,7 @@ defmodule Chord do
 		chord_ring = createRing(nodes, hash_map)
 		Enum.map(nodes, fn node -> Nodes.set_info(node, chord_ring, hash_map) end)
 		newState = put_in state.chord_ring, chord_ring
+		Enum.map(nodes, fn node -> Nodes.stabilize(node, hash_map, chord_ring) end)
 		{:reply, :ok, newState}
   	end
 

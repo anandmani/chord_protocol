@@ -7,11 +7,11 @@ defmodule Nodes do
     end
 
     def set_info(node, chord_ring, hash_map) do
-        GenServer.cast(node, {:setInfo, {node, chord_ring, hash_map}})
+        GenServer.cast(node, {:setInfo, {chord_ring, hash_map}})
     end
 
-    def fix_fingers(node, chord_ring, hash_map) do
-        GenServer.cast(node, {:fixFingers, {node, chord_ring, hash_map}})
+    def stabilize(node, chord_ring, hash_map) do
+        GenServer.cast(node, {:stabilize, {chord_ring, hash_map}})
     end
     # def join(node) do
     #     GenServer.cast(node, {:joinNodes})
@@ -29,9 +29,10 @@ defmodule Nodes do
     end
 
     def handle_cast({method, args}, state) do
-        node = elem(args, 0)
-        chord_ring = elem(args, 1)
-        hash_map = elem(args, 2)
+
+        node = self()
+        chord_ring = elem(args, 0)
+        hash_map = elem(args, 1)
         cond do
             method == :setInfo ->
                 neighbors = Map.get(chord_ring, Map.get(hash_map, node))
@@ -47,14 +48,19 @@ defmodule Nodes do
                     Enum.find(hash_list, fn x -> x > new_hex end)
                 end
                 fingers = Enum.map(1..10, set_fingers)
-                IO.inspect(fingers)
+                # IO.inspect(fingers)
                 newState = put_in newState.fingers, fingers
                 {:noreply, newState}
-            #     set_fingers = fn i ->
-            #         Map.get(hash_map, node)
-            #     Enum.map(1..160, set_fingers)
-            # method == :fixFinger ->
+            method == :stabilize ->
+                IO.inspect(node)
+                IO.inspect(state.successor)
+                # cond do
+                #     elem(Map.get(chord_ring, elem(state.successor, 0)), 0) != Map.get(hash_map, node) ->
 
+                # end
+                IO.inspect(elem(Map.get(chord_ring, elem(state.successor, 0)), 0))
+                newState = state
+                {:noreply, newState}
         end
     end
 
