@@ -23,7 +23,7 @@ defmodule Chord do
 		hash_map = createHashMap(nodes)
 		chord_ring = createRing(nodes, hash_map)
 		Enum.map(nodes, fn node -> Nodes.set_info(node, chord_ring, hash_map) end)		
-		IO.inspect(nodeState.successor)
+		# IO.inspect(nodeState.successor)
 		newState = put_in state.chord_ring, chord_ring
 		{:reply, :ok, newState}
   	end
@@ -41,18 +41,22 @@ defmodule Chord do
 
 	def createRing(nodes, hash_map) do
 		IO.inspect(nodes)	
-		hash_list = Map.values(hash_map)
+		hash_list = Map.values(hash_map) |> Enum.sort
+		IO.puts "Sorted list"; IO.inspect hash_list
 
 		successor_map = for a <- hash_list, id = a, data = get_successor(hash_list, a, hash_map), into: %{} do
 			{id, data}
 		end
+		# IO.puts "succ"; IO.inspect successor_map
+
 		predecessor_map = for a <- hash_list, id = a, data = get_predecessor(hash_list, a, hash_map), into: %{} do
 			{id, data}
 		end
+		# IO.puts "pred"; IO.inspect predecessor_map
 		
 		pre_suc_map = Map.merge(predecessor_map, successor_map, 
 		fn _k, v1, v2 -> List.to_tuple(Tuple.to_list(v1)++Tuple.to_list(v2)) end)
-		IO.inspect(pre_suc_map)
+		IO.puts "succ-pred"; IO.inspect(pre_suc_map)
 	end
 
 	def get_hash(node) do

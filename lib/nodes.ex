@@ -23,7 +23,7 @@ defmodule Nodes do
                 :index => x,
                 :successor => nil, 
                 :predecessor => nil,
-                :fingers =>
+                :fingers => nil
             }
         }
     end
@@ -41,11 +41,9 @@ defmodule Nodes do
                 newState = put_in newState.successor, successor
                 newState = put_in newState.predecessor, predecessor
                 {:noreply, newState}
-                set_fingers = fn i ->
-                    Map.get(hash_map, node) + 
-                Enum.map(1..256, set_fingers)
-            method == :fixFinger ->
-
+                # set_fingers = fn i ->
+                    # Map.get(hash_map, node) + 
+                # Enum.map(1..256, set_fingers)
         end       
     end
 
