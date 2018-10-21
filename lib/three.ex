@@ -19,44 +19,35 @@ defmodule Chord do
 
 	def handle_call({:create_node, args}, _, state) do
 		{numNodes} = args
-		nodes = createNodes(numNodes)
-		hash_map = createHashMap(nodes)
-		chord_ring = createRing(nodes, hash_map)
-		Enum.map(nodes, fn node -> Nodes.set_info(node, chord_ring, hash_map) end)		
-		# IO.inspect(nodeState.successor)
+		hash_map = createNodes(numNodes)
+		chord_ring = createRing(hash_map)
+		Enum.map(hash_map, fn {pid, hashcode} -> 
+			neighbors = Map.get(chord_ring, Map.get(hash_map, pid))
+			successor = %{:pid => elem(neighbors, 3), :hashcode => elem(neighbors, 2)}
+			predecessor = %{:pid => elem(neighbors, 1), :hashcode => elem(neighbors, 0)}
+			Participant.set_info(pid, hashcode, predecessor, successor) 
+		end)		
 		newState = put_in state.chord_ring, chord_ring
 		{:reply, :ok, newState}
   	end
   
 	def createNodes(numNodes) do
-		nodes = []
-		nodes ++ Enum.map(1..numNodes, fn x -> Nodes.start_link(x) end)
+		a = 1..numNodes |> Enum.map(fn index -> Participant.start_link([]) end) |> Map.new
+		IO.puts "Map.new"; IO.inspect a
+		a
 	end
 
-	def createHashMap(nodes) do
-		for a <- nodes, id = a, data = get_hash(a), into: %{} do
-            {id, data}
-        end
-	end
-
-	def createRing(nodes, hash_map) do
-		IO.inspect(nodes)	
+	def createRing(hash_map) do
 		hash_list = Map.values(hash_map) |> Enum.sort
 		IO.puts "Sorted list"; IO.inspect hash_list
-
 		successor_map = for a <- hash_list, id = a, data = get_successor(hash_list, a, hash_map), into: %{} do
 			{id, data}
 		end
-		# IO.puts "succ"; IO.inspect successor_map
-
 		predecessor_map = for a <- hash_list, id = a, data = get_predecessor(hash_list, a, hash_map), into: %{} do
 			{id, data}
 		end
-		# IO.puts "pred"; IO.inspect predecessor_map
-		
 		pre_suc_map = Map.merge(predecessor_map, successor_map, 
 		fn _k, v1, v2 -> List.to_tuple(Tuple.to_list(v1)++Tuple.to_list(v2)) end)
-		IO.puts "succ-pred"; IO.inspect(pre_suc_map)
 	end
 
 	def get_hash(node) do
@@ -86,16 +77,13 @@ defmodule Chord do
 end
 
 defmodule Proj do
-	@moduledoc """
-	Documentation for Three.
-	"""
-
-	def start(numNodes) do
+	def start(num_nodes \\ 10, _num_requests \\ 10) do
 		{:ok, pid} = Chord.start_link([])
 		Process.register(pid, :main)
-		Chord.create_node(:main, numNodes)
+		Chord.create_node(:main, num_nodes)
 		# Chord.join_nodes(numNodes)
 	end
 end
 
-
+# {a1, _}= Integer.parse(a, 16)
+# 15 |> Integer.to_string(16)
