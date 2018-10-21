@@ -21,9 +21,9 @@ defmodule Nodes do
         {:ok,
             %{
                 :index => x,
-                :successor => nil, 
+                :successor => nil,
                 :predecessor => nil,
-                :fingers =>
+                :fingers => nil
             }
         }
     end
@@ -35,19 +35,28 @@ defmodule Nodes do
         cond do
             method == :setInfo ->
                 neighbors = Map.get(chord_ring, Map.get(hash_map, node))
-                successor = %{node => {elem(neighbors, 0), elem(neighbors, 1)}}
-                predecessor = %{node => {elem(neighbors, 2), elem(neighbors, 3)}}
+                successor = {elem(neighbors, 2), elem(neighbors, 3)}
+                predecessor = {elem(neighbors, 2), elem(neighbors, 3)}
                 newState = state
                 newState = put_in newState.successor, successor
                 newState = put_in newState.predecessor, predecessor
-                {:noreply, newState}
+                hash_list = Enum.sort(Map.values(hash_map))
                 set_fingers = fn i ->
-                    Map.get(hash_map, node) + 
-                Enum.map(1..256, set_fingers)
-            method == :fixFinger ->
+                    new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(Map.get(hash_map, node), 16), 0) +
+                    Kernel.trunc(:math.pow(2, i)), 16))
+                    {node, Enum.find(hash_list, fn x -> x > new_hex end)}
+                end
+                fingers = Enum.map(1..10, set_fingers)
+                IO.inspect(fingers)
+                newState = put_in newState.fingers, fingers
+                {:noreply, newState}
+            #     set_fingers = fn i ->
+            #         Map.get(hash_map, node)
+            #     Enum.map(1..160, set_fingers)
+            # method == :fixFinger ->
 
-        end       
+        end
     end
 
-    
+
 end

@@ -1,6 +1,6 @@
 defmodule Chord do
   	use GenServer
-  
+
  	 def start_link(opts) do
 		GenServer.start_link(__MODULE__, :ok, opts)
 	end
@@ -22,12 +22,11 @@ defmodule Chord do
 		nodes = createNodes(numNodes)
 		hash_map = createHashMap(nodes)
 		chord_ring = createRing(nodes, hash_map)
-		Enum.map(nodes, fn node -> Nodes.set_info(node, chord_ring, hash_map) end)		
-		IO.inspect(nodeState.successor)
+		Enum.map(nodes, fn node -> Nodes.set_info(node, chord_ring, hash_map) end)
 		newState = put_in state.chord_ring, chord_ring
 		{:reply, :ok, newState}
   	end
-  
+
 	def createNodes(numNodes) do
 		nodes = []
 		nodes ++ Enum.map(1..numNodes, fn x -> Nodes.start_link(x) end)
@@ -40,8 +39,8 @@ defmodule Chord do
 	end
 
 	def createRing(nodes, hash_map) do
-		IO.inspect(nodes)	
-		hash_list = Map.values(hash_map)
+		IO.inspect(nodes)
+		hash_list = Enum.sort(Map.values(hash_map))
 
 		successor_map = for a <- hash_list, id = a, data = get_successor(hash_list, a, hash_map), into: %{} do
 			{id, data}
@@ -49,8 +48,8 @@ defmodule Chord do
 		predecessor_map = for a <- hash_list, id = a, data = get_predecessor(hash_list, a, hash_map), into: %{} do
 			{id, data}
 		end
-		
-		pre_suc_map = Map.merge(predecessor_map, successor_map, 
+
+		pre_suc_map = Map.merge(predecessor_map, successor_map,
 		fn _k, v1, v2 -> List.to_tuple(Tuple.to_list(v1)++Tuple.to_list(v2)) end)
 		IO.inspect(pre_suc_map)
 	end
