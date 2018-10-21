@@ -44,7 +44,7 @@ defmodule Nodes do
                 set_fingers = fn i ->
                     new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(Map.get(hash_map, node), 16), 0) +
                     Kernel.trunc(:math.pow(2, i)), 16))
-                    if(Enum.find(hash_list, fn x -> x > new_hex end)
+                    Enum.find(hash_list, fn x -> x > new_hex end)
                 end
                 fingers = Enum.map(1..10, set_fingers)
                 IO.inspect(fingers)
