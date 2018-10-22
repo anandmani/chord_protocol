@@ -1,13 +1,12 @@
 defmodule Stack do
-  
   def new do
     []
   end
-  
+
   def push(stack, elem) do
     [elem] ++ stack
   end
-  
+
   def pop(stack) do
     if length(stack) == 0 do
       raise "Stack is empty!"
@@ -15,7 +14,6 @@ defmodule Stack do
       {hd(stack), tl(stack)}
     end
   end
-
 end
 
 # a = Stack.new()

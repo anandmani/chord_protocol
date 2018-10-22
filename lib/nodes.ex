@@ -1,18 +1,5 @@
 #TODO: handle predecessor, successor = nil
 defmodule Participant do
-    @moduledoc """
-    Participant state so far = %{
-      :hashcode,
-      :successor => %{:pid, :hashcode},
-      :predecessor => %{:pid, :hashcode}
-      :num_requests,
-      :pending_requests => [request_id1, request_id2],
-      :completed_requests => %{
-        request_id1: num_hops
-      },
-      :fingers
-    }
-    """
     use GenServer
 
     def start_link(opts) do
@@ -117,8 +104,29 @@ defmodule Participant do
       Map.merge(state, temp_state)
     end
   
+    @doc """
+      Participant state so far = %{
+        :hashcode,
+        :successor => %{:pid, :hashcode},
+        :predecessor => %{:pid, :hashcode}
+        :num_requests,
+        :pending_requests => [request_id1, request_id2],
+        :completed_requests => %{
+          request_id1: num_hops
+        },
+        :fingers
+      }
+    """
     def init(:ok) do
-      {:ok, %{}}
+      {:ok, %{
+        :hashcode => nil,
+        :successor => nil, 
+        :predecessor => nil,
+        :num_requests => 0,
+        :pending_requests => [],
+        :completed_requests => nil,
+        :fingers => nil
+      }}
     end
     def handle_cast({method, methodArgs}, state) do
       case method do

@@ -1,6 +1,16 @@
+#TODO: Find fingers for last node 
+#TODO: Verify if fingers are correct
+
 defmodule Chord do
   	use GenServer
 
+		@max_hashcode "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+		def max_hashcode, do: @max_hashcode
+		def max_hashcode_integer do
+			{int, _} = @max_hashcode |> Integer.parse(16)
+			int
+		end
+	
  	 def start_link(opts) do
 		GenServer.start_link(__MODULE__, :ok, opts)
 	end
@@ -17,36 +27,58 @@ defmodule Chord do
 			}}
 	end
 
+	@doc """
+	hash_map = %{pid1 => hashcode1}
+	chord_ring = %{pid1 => {predecessor_hashcode, predecessor_pid, successor_hashcode, successor_pid}}
+	sorted_hash_list = [pidX: hashcodeX, pidY: hashcodeY]
+  """
 	def handle_call({:create_node, args}, _, state) do
 		{numNodes} = args
 		hash_map = createNodes(numNodes)
-		sorted_hash_list = hash_map |> Enum.sort_by(&(elem(&1, 1))) 
-		IO.puts "hash_map"; IO.inspect hash_map
+		sorted_hash_list = hash_map |> Enum.sort_by(&(elem(&1, 1)))
 		chord_ring = createRing(hash_map)
 		Enum.map(hash_map, fn {pid, hashcode} -> 
 			neighbors = Map.get(chord_ring, Map.get(hash_map, pid))
 			successor = %{:pid => elem(neighbors, 3), :hashcode => elem(neighbors, 2)}
 			predecessor = %{:pid => elem(neighbors, 1), :hashcode => elem(neighbors, 0)}
-      
+			{hashcode_integer, _} = hashcode |> Integer.parse(16)
 			set_fingers = fn i ->
-					new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(hashcode, 16), 0) +
-					Kernel.trunc(:math.pow(2, i)), 16))
-					Enum.find(sorted_hash_list, fn {pid,hashcode} -> hashcode > new_hex end)
+					# new_hex = List.to_string(Integer.to_charlist(elem(Integer.parse(hashcode, 16), 0) + Kernel.trunc(:math.pow(2, i)), 16))
+					two_power_i = :math.pow(2, i) |> Kernel.trunc
+					sum_modulo = (hashcode_integer + two_power_i) |> rem(max_hashcode_integer)
+					new_hashcode = sum_modulo |> Integer.to_string(16) |> String.pad_leading(40,"0")
+
+					# IO.puts "new_hashcode #{new_hashcode}"; 
+					node_found = Enum.find(sorted_hash_list, fn {pid,hashcode} -> hashcode > new_hashcode end) || hd(sorted_hash_list)
+					# IO.puts "code #{new_hashcode}    node #{elem(node_found,1)}"
+					# node_found
 			end
-			fingers = Enum.map(1..10, set_fingers)
+			# IO.puts "Fingers for #{hashcode}"
+			fingers = Enum.map(1..159, set_fingers)
       # IO.puts "fingers"; IO.inspect fingers          
                 
 			Participant.set_info(pid, hashcode, predecessor, successor, fingers) 
 		end)		
 		newState = put_in state.chord_ring, chord_ring
-		# Enum.map(nodes, fn node -> Nodes.stabilize(node, hash_map, chord_ring) end)
+
+		#Testing find_successor
+		# IO.puts "hash_map"; IO.inspect hash_map
+		# one = hash_map |> Enum.random
+		# two = hash_map |> Enum.random
+		# IO.puts "Asking #1 to find #2"; IO.inspect one; IO.inspect two;
+		# Participant.find_successor(elem(one,0), %{:id => elem(two,1)})
+
+		hash_map |> Map.keys |> Enum.map(fn pid -> 
+			IO.puts "Inspecting"; IO.inspect pid;
+			Participant.inspect(pid) |> IO.inspect(limit: :infinity)
+		end)
+
+
 		{:reply, :ok, newState}
   	end
 
 	def createNodes(numNodes) do
-		a = 1..numNodes |> Enum.map(fn index -> Participant.start_link([]) end) |> Map.new
-		IO.puts "Map.new"; IO.inspect a
-		a
+		1..numNodes |> Enum.map(fn index -> Participant.start_link([]) end) |> Map.new
 	end
 
 
@@ -63,11 +95,6 @@ defmodule Chord do
 
 		fn _k, v1, v2 -> List.to_tuple(Tuple.to_list(v1)++Tuple.to_list(v2)) end)
 	end
-
-	def get_hash(node) do
-		node_bin = node |> :erlang.pid_to_list |> :erlang.list_to_binary
-		:crypto.hash(:sha, node_bin) |> Base.encode16
-  	end
 
 	def get_successor(hash_list, node_hash, hash_map) do
 		cond do
@@ -91,7 +118,7 @@ defmodule Chord do
 end
 
 defmodule Three do
-	def start(num_nodes \\ 10, _num_requests \\ 10) do
+	def start(num_nodes \\ 5, _num_requests \\ 10) do
 		{:ok, pid} = Chord.start_link([])
 		Process.register(pid, :main)
 		Chord.create_node(:main, num_nodes)
@@ -99,5 +126,13 @@ defmodule Three do
 	end
 end
 
-# {a1, _}= Integer.parse(a, 16)
-# 15 |> Integer.to_string(16)
+
+	# # Hashcode modulo
+	# a = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+	# {a1, _} = a |> Integer.parse(16)
+	# #a1 = 115792089237316195423570985008687907853269984665640564039457584007913129639935,
+	# b = "10000000000000000000000000000000000000000000000000000000000000000"
+	# {b1, _} = b |> Integer.parse(16)
+	# # b1 = 115792089237316195423570985008687907853269984665640564039457584007913129639936,
+	# c1 = rem(b1,a1)
+	# c1 |> Integer.to_string(16) |> String.pad_leading(64,"0")
